@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Modal,Button,Input,message} from'antd';
+import {Modal,Button,Input,message,Pagination} from'antd';
 import url from'../../config'
 import axios from'axios';
 
@@ -8,35 +8,74 @@ class MotorRoom extends Component{
     constructor(){
         super();
         this.state={
+            pageNo:1,
+            pageSize:10,
             visible:false,
-            arr:[]
+            arr:[],
+            id:"",
+            dataTotal:""
         };
     }
 
     componentDidMount(){
-        axios.get(`${url}/ComputerRoom/getListPage?pageNo=1&&pageSize=10`)
+        axios.get(`${url}/ComputerRoom/getListPage?pageNo=${this.state.pageNo}&&pageSize=${this.state.pageSize}`)
             .then((res)=>{
-                        this.setState({arr:res.data.content});
+                console.log(res);
+                
+                        this.setState({arr:res.data.content,dataTotal:res.data.totalElements});
         })
             .catch(err=>{console.log(err)})
     }
-    handleClick = (a)=>{
-        this.props.add(a);
-        if(a==8){
-            this.setState({
-                visible:true
-            })
-        }
+    handleClick = (a,b)=>{
+        this.props.add(a)
+        sessionStorage.setItem("id",b)
     };
+    handleClick1 = ()=>{
+        this.setState({
+            visible:true
+        })
+    }
     handleOk = ()=>{
-        let name = document.querySelector(".motorRoom").value
-        if(name == ""){
-            alert('请输入机房信息')
+        let creator = document.querySelector(".create").value
+        let name = document.querySelector(".name").value
+        let no = document.querySelector(".name").value
+        let place = document.querySelector(".place").value
+        if(creator == ""){
+            message.info('请输入机房创建者')
+        }else if(name ==""){
+            message.info('请输入机房名称')
+        }else if(no ==""){
+            message.info('请输入机房编号')
+        }else if(place ==""){
+            message.info('请输入机房地点')
         }else{
-            this.setState({
-                visible:false
-            });
-            message.success("机房添加成功")
+            let data={
+                creator:creator,
+                name:name,
+                no:no,
+                place:place
+            }
+            axios.post(`${url}/ComputerRoom/add`,data).then(res=>{
+                console.log(res);
+                if(res.data =="" || res.data == null){
+                    message.error("机房添加失败")
+                }else{
+                    axios.get(`${url}/ComputerRoom/getListPage?pageNo=${this.state.pageNo}&&pageSize=${this.state.pageSize}`)
+                    .then((res)=>{
+                        console.log(res);
+                                this.setState({arr:res.data.content});
+                })
+                    .catch(err=>{console.log(err)})    
+                   this.setState({
+                    visible:false
+                 });
+                    message.success("机房添加成功") 
+                }
+            }).catch(err=>{console.log(err);
+            })
+            
+            
+            
 
         }
     };
@@ -45,14 +84,46 @@ class MotorRoom extends Component{
             visible:false
         })
     };
+    handleDelete = ()=>{
+        if(this.state.id ==""){
+            message.info("请选择机房")
+        }else{
+            axios.get(`${url}/ComputerRoom/delete?id=${this.state.id}`).then(res=>{
+                console.log(res);
+                if(res.data ==0){
+                    message.success("删除成功")
+                    axios.get(`${url}/ComputerRoom/getListPage?pageNo=1&&pageSize=`).then((res)=>{
+                        console.log(res);
+                        this.setState({arr:res.data.content});
+                    }).catch(err=>{console.log(err)})
+            
+                        
+                    
+                }else{
+                    message.error("删除失败!请先删除机房下的机柜,设备等信息")
+                }
+            })
+        }
+    } 
+    handleChange = (pageNumber)=>{
+        axios.get(`${url}/ComputerRoom/getListPage?pageNo=${pageNumber}&&pageSize=${this.state.pageSize}`)
+            .then((res)=>{
+                console.log(res);
+                
+                        this.setState({arr:res.data.content,dataTotal:res.data.totalElements});
+        })
+            .catch(err=>{console.log(err)})
+    }
+
     render(){
 
-        let content = (<ul>{this.state.arr.map((item,index)=>(
+        let content = 
+        (<ul>{this.state.arr.map((item,index)=>(
             <li key={index} className="div-a">
                 <div className="content">
                     <p>
-                        <input type="checkbox" name="vehicle" value="Bike"/>
-                        <a onClick={()=>{this.handleClick(7)}}>{item.name}</a>
+                        <input type="radio" style={{width:12,height:12}} onClick={()=>{this.setState({id:item.id})}} name="vehicle" value="Bike"/>
+                        <a onClick={()=>{this.handleClick(7,item.id)}}>{item.name}</a>
                     </p>
                 </div>
                 <div className="footer">
@@ -67,8 +138,8 @@ class MotorRoom extends Component{
 
                 <div className="title2">
                     <span>
-                        <a  onClick={()=>{this.handleClick(8)}} className="btn">新增</a>
-                        <a  className="btn">删除</a>
+                        <a  onClick={this.handleClick1} className="btn">新增</a>
+                        <a  className="btn" onClick={this.handleDelete} >删除</a>
                     </span>
                 </div>
 
@@ -77,10 +148,7 @@ class MotorRoom extends Component{
 
                 <div className="page">
                     <span>
-                        上一页  1 - 0 共 0   下一页  跳转到：
-                        <select>
-                            <option>第1页</option>
-                        </select>
+                    <Pagination showQuickJumper  total={this.state.dataTotal} onChange={this.handleChange} />
                     </span>
                 </div>
                 <Modal
@@ -97,7 +165,10 @@ class MotorRoom extends Component{
                         </Button>,
                     ]}
                 >
-                <Input placeholder="请输入机房名称" className="motorRoom" type="text" />
+                <div>创建者: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <Input style={{marginTop:"15px",width:"80%"}} placeholder="请输入机房创建者" className="create" type="text" /></div>
+                <div>机房名称: &nbsp;&nbsp;&nbsp; <Input style={{marginTop:"15px",width:"80%"}} placeholder="请输入机房名称" className="name" type="text" /></div> 
+                <div>机房编号: &nbsp;&nbsp;&nbsp; <Input style={{marginTop:"15px",width:"80%"}} placeholder="请输入机房编号" className="no" type="text" /></div> 
+                <div>机房地点: &nbsp;&nbsp;&nbsp; <Input style={{marginTop:"15px",width:"80%"}} placeholder="请输入机房地点" className="place" type="text" /></div> 
                 </Modal>
             </div>
         )

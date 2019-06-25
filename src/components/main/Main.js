@@ -7,7 +7,7 @@ import FaultAdd from'../operation/FaultAdd'
 import ResourcesAdd from '../operation/ResourcesAdd'
 import Resources from'../operation/Resources'
 import Content from '../Content/Content';
-import ContentRitta from '../Content/ContentRittal';
+import ContentRittal from '../Content/ContentRittal';
 import Cable from'../Content/Cable'
 import CableAdd from'../Content/CableAdd'
 import TubeWell from'../Content/TubeWell'
@@ -19,7 +19,8 @@ class Main extends React.Component{
     state={
         content:<MotorRoom  />,
         information:['设备类资源管理','线缆类资源','管井类资源'],
-        add:0
+        add:0,
+        tubeWellId:""
     };
     componentDidMount(){
         this.setState({
@@ -91,9 +92,10 @@ class Main extends React.Component{
 
         }
     };
-    handleBack = (a)=>{
+    handleBack = (a,b)=>{
         this.setState({
-            add:a
+            add:a,
+            tubeWellId:b
         })
     };
     link = (title)=>{
@@ -119,6 +121,8 @@ class Main extends React.Component{
         }
     };
     render(){
+        console.log(this.state.tubeWellId);
+        
         return(
             <div style={{display:"flex",background:"#000"}}>
                 <div style={{width:"152px"}}>
@@ -129,13 +133,12 @@ class Main extends React.Component{
                         this.state.add == 2?<FaultAdd back={this.handleBack}/>:
                             this.state.add == 3?<CableAdd back={this.handleBack}/>:
                                 this.state.add == 4?<TubeWellAdd back={this.handleBack}/>:
-                                    this.state.add == 5?<ContentRitta back={this.handleBack}/>:
+                                    this.state.add == 5?<ContentRittal tubeWellId={this.state.tubeWellId} back={this.handleBack}/>:
                                         this.state.add == 6?<MotorRoom add={this.add} />:
                                             this.state.add == 7?<Content back={this.handleBack}/>:
                             <div>
                                 <Header text={this.state.information} second={this.handleClick}/>
                                 {this.state.content}
-                                <Map />
                             </div>
                     }
                 </div>
